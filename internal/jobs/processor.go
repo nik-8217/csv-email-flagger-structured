@@ -10,6 +10,7 @@ import (
 	"csv-email-flagger/internal/storage"
 	"csv-email-flagger/internal/transform"
 	"csv-email-flagger/pkg/logger"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -56,24 +57,34 @@ func processJob(j *Job) {
 	log := logger.Log.WithFields(logrus.Fields{"job_id": j.ID, "mode": j.Mode})
 	Jobs.SetStatus(j.ID, StatusInProgress, nil)
 
+	// Open input file
 	in, err := os.Open(j.InputPath)
 	if err != nil {
 		Jobs.SetStatus(j.ID, StatusFailed, err)
 		log.WithError(err).Error("failed to open input file")
 		return
 	}
-	defer in.Close()
+	defer func() {
+		if closeErr := in.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("failed to close input file")
+		}
+	}()
 
-	outPath := filepath.Join("storage", j.ID+".csv")
+	// Create output file
+	outPath := storage.GetProcessedFilePath(j.ID)
 	out, err := os.Create(outPath)
 	if err != nil {
 		Jobs.SetStatus(j.ID, StatusFailed, err)
 		log.WithError(err).Error("failed to create output file")
 		return
 	}
-	defer out.Close()
+	defer func() {
+		if closeErr := out.Close(); closeErr != nil {
+			log.WithError(closeErr).Warn("failed to close output file")
+		}
+	}()
 
-	// process depending on mode
+	// Process depending on mode
 	if j.Mode == "parallel" {
 		err = transform.TransformParallel(in, out, 4)
 	} else {
@@ -81,10 +92,16 @@ func processJob(j *Job) {
 	}
 
 	if err != nil {
+		// Clean up output file on error
+		if removeErr := os.Remove(outPath); removeErr != nil {
+			log.WithError(removeErr).Warn("failed to remove output file after error")
+		}
 		Jobs.SetStatus(j.ID, StatusFailed, err)
 		log.WithError(err).Error("processing failed")
 		return
 	}
+
+	// Update job with output path and mark as done
 	j.Output = outPath
 	Jobs.SetStatus(j.ID, StatusDone, nil)
 	log.Info("job completed successfully")

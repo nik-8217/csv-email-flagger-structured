@@ -1,0 +1,6 @@
+name,email
+Alice,alice@example.com
+
+Bob,not-an-email
+   ,   
+Charlie,charlie@test.com
