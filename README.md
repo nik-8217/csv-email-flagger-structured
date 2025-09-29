@@ -66,7 +66,7 @@ The service follows a clean architecture pattern with clear separation of concer
 
 ### Prerequisites
 
-- Go 1.18 or later
+- Go go 1.22 or later
 - Docker (optional, for containerized deployment)
 - Make (optional, for using Makefile commands)
 
@@ -487,7 +487,7 @@ For a complete list of commands and detailed usage, see [MAKEFILE_USAGE.md](MAKE
    # Check Go version
    go version
    
-   # Update go.mod if needed (currently set to 1.18)
+   # Update go.mod if needed (currently set to go 1.22)
    ```
 
 5. **Makefile not found or not working**
