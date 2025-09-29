@@ -1,4 +1,0 @@
-name,email,hasEmail
-Alice,alice@example.com,true
-Bob,not-an-email,false
-Charlie,charlie@test.com,true
